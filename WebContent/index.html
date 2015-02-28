@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html ng-app="gitviewer">
+<head>
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular-resource.js"></script>
+
+<script src="bootstrap/js/bootstrap.js"></script>
+<link rel="stylesheet" href="bootstrap/css/bootstrap.css" />
+<script>
+angular.module('gitviewer.branchServices', ['ngResource']).
+factory('Branch', function($resource) {
+	return $resource('rest/git/:branchId', {}, {
+		query: {method: 'GET', params: {branchId: 'branches' }, isArray: true}
+	});
+});
+
+angular.module('gitviewer.logServices', ['ngResource']).
+factory('Log', function($resource) {
+	return $resource('rest/git/branches/:branchId', {}, {
+		get: {method: 'GET', isArray: true}
+	});
+});
+
+angular.module('gitviewer.diffServices', ['ngResource']).
+factory('Diff', function($resource) {
+	return $resource('rest/git/commits/:commitId', {}, {
+		get: {method: 'GET', isArray: true}
+	});
+});
+function GitBranchController($scope, Branch) {	
+	$scope.branches = Branch.query();
+	
+	$scope.alertR = function() {
+		alert("Not implemented");
+	};
+}
+
+function GitCommitController($scope, $routeParams, Diff) {
+	$scope.diffs = Diff.get({commitId: $routeParams.commitId});
+}
+
+function GitLogController($scope, $http, $route, $routeParams, Branch, Log) {	
+	$scope.log = Log.get({branchId: $routeParams.branchId});
+}
+
+angular.module('gitviewer', ['gitviewer.branchServices', 'gitviewer.logServices', 'gitviewer.diffServices']).
+config(['$routeProvider', function($routeProvider) {
+	$routeProvider.
+	when('/branches/:branchId', { templateUrl: 'partials/commitlog.html', controller: GitLogController }).
+	when('/commits/:commitId', { templateUrl: 'partials/commitdetails.html', controller: GitCommitController }).
+	otherwise({redirectTo: '/branches/1'});
+}]);
+</script>
+<style>
+body { padding: 70px; }
+</style>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Git Viewer</title>
+</head>
+<body>
+<nav class="navbar navbar-default navbar-fixed-top"  ng-controller="GitBranchController">
+	<a class="navbar-brand">GitViewer</a>
+	<ul class="nav navbar-nav">
+		<li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown">Branches<b class="caret"></b></a>
+			<ul class="dropdown-menu">
+				<li ng-repeat="branch in branches"><a href="#/branches/{{branch.id}}">{{branch.name}}</a></li>
+			</ul>
+		</li>
+		<li><button class="btn btn-default navbar-btn" ng-click="alertR()">Reload</button></li>
+	</ul>
+</nav>
+
+<div ng-view></div>
+
+</body>
+</html>
